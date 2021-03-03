@@ -20,6 +20,7 @@ export type WorkerResult = [
 function lineString(points: number[][], color: string) {
   const material = new THREE.LineBasicMaterial({
     color: color,
+    linewidth: 10,
     blending: THREE.AdditiveBlending,
   });
   const geometry = new THREE.Geometry();
@@ -39,82 +40,54 @@ const squareProjection: (shape: {
 ] = ({ width, height }: { width: number; height: number }) => {
   const ratio = height / width;
 
-  // return [
-  //   { width: height, height },
-  //   ([x, y]: [number, number]) => [x * ratio - height / 2, y - height / 2],
-  // ];
   return [
     { width: height, height },
-    ([x, y]: [number, number]) => [x * ratio, y],
-  ];
-};
-
-const scaler = (
-  { width, height }: { width: number; height: number },
-  scale: number,
-) => {
-  return ([x, y]: [number, number]): [number, number] => [
-    (x / width) * scale,
-    (y / height) * scale,
+    ([x, y]: [number, number]) => [x * ratio - height / 2, y - height / 2],
   ];
 };
 
 class Heightmap extends Component<{
   result: WorkerResult;
-  scaleFactor: number;
 }> {
   mount = React.createRef<HTMLDivElement>();
   disposables: any[] = [];
   running = true;
 
-  drawQuakes = (quakes: []) => {};
-
-  coordinatesToPixels = (lat: number, lon: number): [number, number] => {
+  componentDidMount() {
     const { result } = this.props;
     const [data, shape, polygons, range, cf] = result;
-    const [xmin, ymin, xmax, ymax] = cf.bbox;
-
-    const x = ((lon - xmin) / (xmax - xmin)) * shape.width;
-    const y = (1 - (lat - ymin) / (ymax - ymin)) * shape.height;
-
-    return [x, y];
-  };
-
-  componentDidMount() {
-    const { result, scaleFactor } = this.props;
-
-    const [data, shape, polygons, range, cf] = result;
     const [newShape, projection] = squareProjection(shape);
-    const scale = scaler(newShape, scaleFactor);
 
-    const ctop = (lat: number, lon: number): [number, number] => {
-      const [xmin, ymin, xmax, ymax] = cf.bbox;
-      const x0 = ((lon - xmin) / (xmax - xmin)) * shape.width;
-      const y0 = (1 - (lat - ymin) / (ymax - ymin)) * shape.height;
-
-      const [x, y] = projection([x0, y0]);
-      return [x, y];
-    };
-
+    // Create scene
     var scene = new THREE.Scene();
+    scene.background = new THREE.Color('black');
+
+    // Create camera
     var camera = new THREE.PerspectiveCamera(
       75,
       window.innerWidth / window.innerHeight,
       0.1,
       1000,
     );
+
+    // Create renderer
     var renderer = new THREE.WebGLRenderer();
-    const controls = new OrbitControls(camera, renderer.domElement);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
-
     this.mount.current!.appendChild(renderer.domElement);
 
+    // Create orbit controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.3;
+
+    // Create functions used for contour plotting
     const heightScale = (d: number) =>
-      (100 * (d - range[0])) / (range[1] - range[0]);
+      (30 * (d - range[0])) / (range[1] - range[0]);
     const color = (d: number) =>
       d3.interpolateViridis((d - range[0]) / (range[1] - range[0]));
 
+    // Create line strings
     const contourLineStrings = (() => {
       const lines: THREE.Line<THREE.Geometry, THREE.LineBasicMaterial>[] = [];
       polygons.forEach((polygon) => {
@@ -124,13 +97,8 @@ class Heightmap extends Component<{
         polygon.coordinates.forEach((rings) => {
           rings.forEach((points) => {
             const points3 = points.map((coords) => {
-              const projected = projection([coords[0], coords[1]]);
-              const [x, y] = scale(projected);
-              return [
-                x - scaleFactor / 2,
-                scaleFactor - y - scaleFactor / 2,
-                heightScale(polygon.value) / shape.height,
-              ];
+              const [x, y] = projection([coords[0], coords[1]]);
+              return [x, y, heightScale(polygon.value)];
             });
             lines.push(lineString(points3, lineColor));
           });
@@ -139,63 +107,20 @@ class Heightmap extends Component<{
       return lines;
     })();
 
-    scene.background = new THREE.Color('black');
     const group = new THREE.Group();
-
-    const coords = ctop(63.9425, -22.1717);
-    const sphereCoords = scale(coords);
-
-    const sphereGroup = new THREE.Group();
-    const sphereGeom = new THREE.SphereGeometry(0.1, 32, 32);
-    const sphereMaterial = new THREE.MeshNormalMaterial();
-    const sphere = new THREE.Mesh(sphereGeom, sphereMaterial);
-    sphere.position.set(
-      sphereCoords[0] - scaleFactor / 2,
-      scaleFactor - sphereCoords[1] - scaleFactor / 2,
-      -0.3,
-    );
-    group.add(sphere);
-
-    // group.add(sphereGroup);
-
-    const size = newShape.width;
-    const divisions = Math.floor(newShape.width / 10);
-
-    const gridHelper = new THREE.GridHelper(size, divisions);
-    const axesHelper = new THREE.AxesHelper(100);
-    // gridHelper.rotateZ(-Math.PI / 2);
-    // gridHelper.rotateY(-Math.PI / 2);
-    // gridHelper.rotateX(-Math.PI / 2);
-    // group.add(gridHelper);
-    // scene.add(axesHelper);
-
-    // group.scale.set(0.005, 0.005, 0.005);
-    group.rotateX(-Math.PI / 2);
-    // group.rotateY(-Math.PI / 2);
-
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.3;
-
-    // group.translateZ(-100);
-    // group.translateY(-4);
-    // group.translateX(-3);
-
     contourLineStrings.forEach((l) => group.add(l));
-    scene.add(group);
 
-    // const axesHelper = new THREE.AxesHelper(5);
-    // scene.add(axesHelper);
+    const axesHelper = new THREE.AxesHelper(100);
+
+    group.scale.set(0.005, 0.005, 0.005);
+
+    scene.add(group);
+    scene.add(axesHelper);
 
     const light = new THREE.PointLight(0xff0000, 1, 100);
     light.position.set(50, 50, 50);
     scene.add(light);
 
-    var geometry = new THREE.BoxGeometry(1, 1, 1);
-    var material = new THREE.MeshNormalMaterial();
-    var cube = new THREE.Mesh(geometry, material);
-    // scene.add(cube);
-
-    camera.position.z = 5;
     const animate = () => {
       if (this.running) requestAnimationFrame(animate);
       renderer.render(scene, camera);
@@ -205,9 +130,6 @@ class Heightmap extends Component<{
 
     this.disposables.push(
       camera,
-      cube,
-      material,
-      geometry,
       light,
       scene,
       ...contourLineStrings,

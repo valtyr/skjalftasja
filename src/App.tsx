@@ -1,7 +1,5 @@
 import React from 'react';
-import logo from './logo.svg';
 import './App.css';
-import GeoViewer from './components/GeoViewer';
 import Heightmap from './components/Heightmap';
 import { useWorker } from 'react-hooks-worker';
 
@@ -18,7 +16,7 @@ function App() {
     <div className="App">
       {/* <GeoViewer /> */}
       {!result && <progress />}
-      {result && <Heightmap result={result} />}
+      {result && <Heightmap result={result} scaleFactor={5} />}
       <div
         style={{
           position: 'absolute',
