@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import * as THREE from 'three';
 import * as d3 from 'd3';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { chordTranspose } from 'd3';
 
 export type WorkerResult = [
   any,
@@ -59,15 +60,59 @@ const scaler = (
   ];
 };
 
-class Heightmap extends Component<{
+export interface Quake {
+  id: string;
+  type: string;
+  lat: number;
+  long: number;
+  m: number;
+  system: string;
+  time: number;
+  depth: number;
+}
+
+interface HeightmapProps {
   result: WorkerResult;
   scaleFactor: number;
-}> {
+  onLoad?: () => {};
+}
+
+class Heightmap extends Component<HeightmapProps> {
   mount = React.createRef<HTMLDivElement>();
   disposables: any[] = [];
   running = true;
+  quakeGroup = new THREE.Group();
 
-  drawQuakes = (quakes: []) => {};
+  drawQuakes = (quakes: Quake[]) => {
+    const { result, scaleFactor } = this.props;
+
+    const [data, shape, polygons, range, cf] = result;
+    const [newShape, projection] = squareProjection(shape);
+    const scale = scaler(newShape, scaleFactor);
+    
+    this.quakeGroup.children.forEach((child) => {
+      this.quakeGroup.remove(child);
+      if ((child as any).dispose) (child as any).dispose();
+    });
+
+    quakes.filter(quake => quake.m > 2.5).forEach(quake => {
+      const rawCoords = this.coordinatesToPixels(quake.lat, quake.long);
+      const scaledCoords = scale(rawCoords);
+      const coords = projection(scaledCoords);
+
+      const sphereGroup = new THREE.Group();
+      // const sphereGeom = new THREE.SphereGeometry(0.02 * quake.m, 32, 32);
+      const sphereGeom = new THREE.SphereGeometry(Math.pow(2, quake.m) / 500, 32, 32);
+      const sphereMaterial = new THREE.MeshNormalMaterial();
+      const sphere = new THREE.Mesh(sphereGeom, sphereMaterial);
+      sphere.position.set(
+        coords[0] - scaleFactor / 2,
+        scaleFactor - coords[1] - scaleFactor / 2,
+        -0.05 * quake.depth,
+      );
+      this.quakeGroup.add(sphere);
+    })
+  };
 
   coordinatesToPixels = (lat: number, lon: number): [number, number] => {
     const { result } = this.props;
@@ -81,7 +126,7 @@ class Heightmap extends Component<{
   };
 
   componentDidMount() {
-    const { result, scaleFactor } = this.props;
+    const { result, scaleFactor, onLoad } = this.props;
 
     const [data, shape, polygons, range, cf] = result;
     const [newShape, projection] = squareProjection(shape);
@@ -105,6 +150,7 @@ class Heightmap extends Component<{
     );
     var renderer = new THREE.WebGLRenderer();
     const controls = new OrbitControls(camera, renderer.domElement);
+    controls.autoRotate = true;
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
 
@@ -154,9 +200,9 @@ class Heightmap extends Component<{
       scaleFactor - sphereCoords[1] - scaleFactor / 2,
       -0.3,
     );
-    group.add(sphere);
+    this.quakeGroup.add(sphere);
 
-    // group.add(sphereGroup);
+    group.add(this.quakeGroup);
 
     const size = newShape.width;
     const divisions = Math.floor(newShape.width / 10);
@@ -215,6 +261,8 @@ class Heightmap extends Component<{
       controls,
       renderer,
     );
+
+    if (onLoad) onLoad();
   }
 
   componentWillUnmount() {

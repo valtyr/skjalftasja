@@ -11408,12 +11408,31 @@ url@^0.11.0:
     punycode "1.3.2"
     querystring "0.2.0"
 
+urs@^0.0.7:
+  version "0.0.7"
+  resolved "https://registry.yarnpkg.com/urs/-/urs-0.0.7.tgz#2dbf320a68a54bbd67ab9c5ac103b0f2227ca6be"
+  integrity sha512-NDwuby5BP7D60RjHlow8Gch4yfglLdCpZagGeVDZNcL+jsA2v6RcBhPTJraqq1oQ1U3LT1bQfgmwgNUUIFht+g==
+
 use-asset@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/use-asset/-/use-asset-1.0.2.tgz#d98a506ba480d113639de60631f89907794ead84"
   integrity sha512-ewqcm1+SmRIpIhanbP2Kdt03u7IQfxGixi3dq2AP90GK5J0fFXBeSp4hO43tx3HG5AXvh6U4hQ00x4JXr5Dhiw==
   dependencies:
     fast-deep-equal "^3.1.3"
+
+use-http@^1.0.17:
+  version "1.0.17"
+  resolved "https://registry.yarnpkg.com/use-http/-/use-http-1.0.17.tgz#333b68b1de30006a9450d83786fae2cee0355b3b"
+  integrity sha512-fNO5TwANhssBXG2jhud+7Uw7mI5b/7fnXx4gbKz41nACjqDuqNnUSg0fgnI3VEUmIvyAglvVt6oSxBejgvdCzA==
+  dependencies:
+    urs "^0.0.7"
+    use-ssr "^1.0.22"
+    utility-types "^3.10.0"
+
+use-ssr@^1.0.22:
+  version "1.0.23"
+  resolved "https://registry.yarnpkg.com/use-ssr/-/use-ssr-1.0.23.tgz#3bde1e10cd01b3b61ab6386d7cddb72e74828bf8"
+  integrity sha512-5bvlssgROgPgIrnILJe2mJch4e2Id0/bVm1SQzqvPvEAXmlsinCCVHWK3a2iHcPat7PkdJHBo0gmSmODIz6tNA==
 
 use@^3.1.0:
   version "3.1.1"

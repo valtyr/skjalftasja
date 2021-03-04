@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { RefObject, useCallback, useRef } from 'react';
 import './App.css';
-import Heightmap from './components/Heightmap';
+import Heightmap, { Quake } from './components/Heightmap';
 import { useWorker } from 'react-hooks-worker';
+import getQuakes from './helpers/quakes';
 
 const terrainWorker = () =>
   new Worker('./workers/terrain.worker', { type: 'module' });
+
 
 function App() {
   const { result, error }: { result: any; error: any } = useWorker(
@@ -12,11 +14,23 @@ function App() {
     null,
   ) as any;
 
+  // const {loading, data, error: quakeError} = useQuakes();
+
+  const heightmap: RefObject<Heightmap> = useRef(null);
+  const onLoad = useCallback(async () => {
+    const quakes = await getQuakes();
+    console.log(quakes);
+    
+    if(heightmap.current)
+      heightmap.current.drawQuakes(quakes);
+
+  }, [])
+
   return (
     <div className="App">
       {/* <GeoViewer /> */}
       {!result && <progress />}
-      {result && <Heightmap result={result} scaleFactor={5} />}
+      {result && <Heightmap ref={heightmap} onLoad={onLoad} result={result} scaleFactor={5} />}
       <div
         style={{
           position: 'absolute',

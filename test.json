@@ -1,0 +1,26 @@
+{
+  "start_time": "2021-02-25 00:39:00",
+  "end_time": "2021-03-04 00:39:00",
+  "depth_min": 0,
+  "depth_max": 25,
+  "size_min": 0,
+  "size_max": 7,
+  "magnitude_preference": ["Mlw", "Autmag"],
+  "event_type": ["qu"],
+  "originating_system": ["SIL picks"],
+  "area": [
+    [68, -32],
+    [61, -32],
+    [61, -4],
+    [68, -4]
+  ],
+  "fields": [
+    "event_id",
+    "lat",
+    "long",
+    "time",
+    "magnitude",
+    "event_type",
+    "originating_system"
+  ]
+}
