@@ -7,7 +7,7 @@ Skoðaðu skjálftana á Reykjanesskaga í þrívídd!
 
 ## Upplýsingar
 
-Þetta er algjört spagettíflippverkefni sem var unnið á nokkrum klukkustundum með React og Three.js.
+Þetta er algjört hakk-og-spaghettí verkefni sem var unnið á nokkrum klukkustundum með React og Three.js.
 
 Svona er verkefnið keyrt upp:
 
